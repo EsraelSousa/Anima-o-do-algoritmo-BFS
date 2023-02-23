@@ -8,13 +8,25 @@ using namespace std;
 
 const int MAXN = 35;
 
+typedef vector<vector<int>> vij;
+
 bool isValido(int x, int y, int vis[MAXN][MAXN]){
     if(x < 2 || x >=30 || y <2 || y >=30) return false;
     if(vis[x][y]) return false;
     return true;
 }
 
-void desenhaGrid(sf::RenderWindow& window, vector<vector<int>>& matriz){
+int getRand(int a, int b){
+    return a + rand() % (b-a);
+} 
+
+void getNewCaminho(vij& matriz){
+    for(int i=0; i<2; i++)
+        for(int j=0; j<2; j++)
+            matriz[i][j] = getRand(2, 29);
+}
+
+void desenhaGrid(sf::RenderWindow& window, vij& matriz, vij& caminho){
     sf::Color cinza(128, 128, 128);
     for (int i = 2; i < 30; i++) {
         for (int j = 2; j < 30; j++) {
@@ -22,8 +34,11 @@ void desenhaGrid(sf::RenderWindow& window, vector<vector<int>>& matriz){
             rectangle.setPosition(i * 30, j * 30);
             rectangle.setOutlineThickness(1);
             rectangle.setOutlineColor(sf::Color::Black);
-                
-            if(matriz[i][j] == 0)
+
+            if((caminho[0][0] == i && caminho[0][1] == j) ||
+                (caminho[1][0] == i && caminho[1][1] == j))
+                rectangle.setFillColor(sf::Color::Blue);
+            else if(matriz[i][j] == 0)
                 rectangle.setFillColor(sf::Color::White);
             else if(matriz[i][j] == 1)
                 rectangle.setFillColor(cinza);
@@ -37,18 +52,20 @@ void desenhaGrid(sf::RenderWindow& window, vector<vector<int>>& matriz){
     }
 }
 
-void bfs(sf::RenderWindow& window, vector<vector<int>>& matriz){
+void bfs(sf::RenderWindow& window, vij& matriz, vij& caminho){
     queue< pair<int, int> > fila;
-    fila.push(make_pair(2, 2));
+    fila.push(make_pair(caminho[0][0], caminho[0][1]));
     int visistado[MAXN][MAXN];
     memset(visistado, 0, sizeof visistado);
     int x, y;
     int dx[] = {-1, 0, 1, 0}, dy[] = {0, 1, 0, -1};
-    cout << " chama a bfs\n";
+    cout << fila.front().first << ' ' << fila.front().second << '\n';
+    cout << caminho[0][0] << ' ' << caminho[0][1] << '\n';
     while(!fila.empty()){
         x = fila.front().first;
         y = fila.front().second;
         fila.pop();
+        if(caminho[1][0] == x && caminho[1][1] == y) break;
         matriz[x][y] = 2;
         visistado[x][y] = 1;
         for(int i=0; i<4; i++){
@@ -59,16 +76,16 @@ void bfs(sf::RenderWindow& window, vector<vector<int>>& matriz){
             }
         }
         window.clear();
-        desenhaGrid(window, matriz);
+        desenhaGrid(window, matriz, caminho);
         window.display();
         sf::sleep(sf::milliseconds(30));
     }
 }
 
 int main() {
-    vector<vector<int>> matriz(MAXN, vector<int>(MAXN, 0)); // matriz das posisções no mapa
-    
-    sf::RenderWindow window(sf::VideoMode(1000, 1000), "Mapa 30x30");
+    vij matriz(MAXN, vector<int>(MAXN, 0)); // matriz das posisções no mapa
+    vij caminho(2, vector<int>(2, 0)); // ponto inicial/final
+    sf::RenderWindow window(sf::VideoMode(1000, 1000), "Mapa 30x30"); // GUI/tela
 
     // cria um objeto de botão de inicio
     sf::RectangleShape buttonInicio(sf::Vector2f(110, 50));
@@ -92,6 +109,9 @@ int main() {
     buttonLabelLimpar.setPosition(buttonLimpar.getPosition().x + 10, buttonLimpar.getPosition().y + 5);
     buttonLabelLimpar.setFillColor(sf::Color::Black);
 
+    srand(time(NULL));
+    getNewCaminho(caminho);
+
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -105,7 +125,8 @@ int main() {
                 sf::Vector2f worldPosition = window.mapPixelToCoords(mousePosition);
                 int i = worldPosition.x / 30;
                 int j = worldPosition.y / 30;
-                if(!((i == 2 && j == 2) || (i == 29 && j == 29))) // não é inicio/fim
+                if(!((i == caminho[0][0] && j == caminho[0][1]) || 
+                    (i == caminho[1][0] && j == caminho[1][1]))) // não é inicio/fim
                     matriz[i][j] = !matriz[i][j];
             }
 
@@ -114,7 +135,7 @@ int main() {
                 sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
                 sf::Vector2f worldPosition = window.mapPixelToCoords(mousePosition);
                 if (buttonInicio.getGlobalBounds().contains(worldPosition)) {
-                    bfs(window, matriz);
+                    bfs(window, matriz, caminho);
                 }
             }
 
@@ -126,6 +147,7 @@ int main() {
                     for(int i=0; i<MAXN; i++)
                         for(int j=i; j < MAXN; j++)
                             matriz[i][j] = matriz[j][i] = 0;
+                    getNewCaminho(caminho);
                 }
             }
         }
@@ -133,7 +155,7 @@ int main() {
         window.clear();
 
         // desenha o grid
-        desenhaGrid(window, matriz);
+        desenhaGrid(window, matriz, caminho);
 
         // desenha o botão e o rótulo do botão de inicio
         window.draw(buttonInicio);
