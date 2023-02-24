@@ -56,11 +56,10 @@ void bfs(sf::RenderWindow& window, vij& matriz, vij& caminho){
     queue< pair<int, int> > fila;
     fila.push(make_pair(caminho[0][0], caminho[0][1]));
     int visistado[MAXN][MAXN];
+    vector<vector<pair<int, int>>> pai(MAXN, vector<pair<int, int>>(MAXN, make_pair(0,0)));
     memset(visistado, 0, sizeof visistado);
     int x, y;
     int dx[] = {-1, 0, 1, 0}, dy[] = {0, 1, 0, -1};
-    cout << fila.front().first << ' ' << fila.front().second << '\n';
-    cout << caminho[0][0] << ' ' << caminho[0][1] << '\n';
     while(!fila.empty()){
         x = fila.front().first;
         y = fila.front().second;
@@ -72,6 +71,7 @@ void bfs(sf::RenderWindow& window, vij& matriz, vij& caminho){
             if(isValido(x+dx[i], y+dy[i], visistado) && matriz[ x+dx[i] ][ y+dy[i] ] == 0){
                 matriz[ x+dx[i] ][ y+dy[i] ] = 3;
                 visistado[ x+dx[i] ][ y+dy[i] ] = 1;
+                pai[ x+dx[i] ][ y+dy[i] ] = make_pair(x, y);
                 fila.push(make_pair(x+dx[i], y+dy[i]));
             }
         }
@@ -79,6 +79,25 @@ void bfs(sf::RenderWindow& window, vij& matriz, vij& caminho){
         desenhaGrid(window, matriz, caminho);
         window.display();
         sf::sleep(sf::milliseconds(30));
+    }
+
+    if(visistado[ caminho[1][0] ][ caminho[1][1] ]){// consegui chegar
+        // vamos mudar a cor das celulas que estão na fila inicialmente
+        while(!fila.empty()){
+            x = fila.front().first;
+            y = fila.front().second;
+            fila.pop();
+            matriz[x][y] = 0;
+        }
+        x = caminho[1][0], y = caminho[1][1];
+        cout << caminho[1][0] << ' ' << caminho[1][1] << '\n';
+        cout << x << ' ' << y << '\n';
+        while(x != caminho[0][0] || y != caminho[0][1]){
+            int x1 = x;
+            x = pai[x1][y].first;
+            y = pai[x1][y].second;
+            matriz[x][y] = 3;
+        }
     }
 }
 
